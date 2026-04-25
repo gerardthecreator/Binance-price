@@ -2,24 +2,27 @@ name: Actualizar Precio Binance
 
 on:
   schedule:
-    # Se ejecuta cada 12 horas (00:00 y 12:00 UTC)
     - cron: '0 */12 * * *'
-  workflow_dispatch: # Permite ejecutarlo manualmente desde la pestaña Actions
+  workflow_dispatch: 
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Permiso para que el robot pueda guardar el data.json
+      contents: write 
+    
+    # Aquí forzamos el uso de Node 24 para eliminar la advertencia
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Descargar repositorio
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # Actualizado a v4
 
       - name: Configurar Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # Actualizado a v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
 
       - name: Instalar librerias
         run: pip install requests pytz
