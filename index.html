@@ -3,97 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitor P2P Binance - VES</title>
+    <title>Binance VZLA Monitor</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #05070a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --accent: #f3ba2f;
+        }
         body {
-            background-color: #0b0e11;
-            color: #eaecef;
-            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
         }
-        .card {
-            background-color: #1e2329;
-            border: 1px solid #474d57;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            max-width: 400px;
-            width: 100%;
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 2rem;
+            text-align: center;
+            transition: transform 0.3s ease;
         }
-        .price-value {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #f3ba2f; /* Color amarillo Binance */
+        .glass-card:hover { transform: translateY(-5px); }
+        .price-text {
+            font-size: 4rem;
+            font-weight: 800;
+            color: var(--accent);
+            text-shadow: 0 0 20px rgba(243, 186, 47, 0.3);
         }
-        .currency {
-            font-size: 1.2rem;
-            color: #848e9c;
+        .label-top { color: #848e9c; letter-spacing: 2px; font-size: 0.8rem; }
+        .vendor-badge {
+            background: rgba(243, 186, 47, 0.1);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.85rem;
         }
-        .update-time {
-            font-size: 0.8rem;
-            color: #848e9c;
-        }
-        .badge-binance {
-            background-color: #f3ba2f;
-            color: #000;
-            font-weight: bold;
+        #status-dot {
+            height: 10px; width: 10px; background-color: #2ebd85;
+            border-radius: 50%; display: inline-block; margin-right: 5px;
         }
     </style>
 </head>
 <body>
 
-    <div class="container d-flex justify-content-center">
-        <div class="card p-4 text-center">
-            <div class="mb-3">
-                <span class="badge badge-binance">BINANCE P2P</span>
-            </div>
-            <h2 class="h5 mb-4">USDT / Bolívares (VES)</h2>
-            
-            <div id="loading" class="spinner-border text-warning" role="status">
-                <span class="visually-hidden">Cargando...</span>
-            </div>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="glass-card">
+                <p class="label-top mb-1">TIPO DE CAMBIO P2P</p>
+                <h1 class="h4 mb-4">USDT / VES</h1>
+                
+                <div id="loader" class="py-5">
+                    <div class="spinner-grow text-warning" role="status"></div>
+                </div>
 
-            <div id="price-container" style="display: none;">
-                <div class="price-value" id="price">-</div>
-                <div class="currency mb-3">VES por 1 USDT</div>
-                <hr style="border-color: #474d57;">
-                <p class="mb-1 text-start" style="font-size: 0.9rem;">
-                    <strong>Vendedor:</strong> <span id="vendor" class="text-info">-</span>
-                </p>
-                <div class="update-time mt-3">
-                    Actualizado: <span id="last-update">-</span>
+                <div id="content" style="display: none;">
+                    <div class="price-text" id="price">0.00</div>
+                    <p class="text-secondary mb-4">Bolívares Digitales</p>
+                    
+                    <div class="d-flex justify-content-between align-items: center mb-4 px-3">
+                        <span class="text-secondary">Vendedor</span>
+                        <span class="vendor-badge" id="vendor">---</span>
+                    </div>
+
+                    <div class="pt-3 border-top border-secondary">
+                        <small class="text-secondary">
+                            <span id="status-dot"></span> 
+                            Actualizado: <span id="time">--:--</span>
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        // Función para cargar los datos desde el JSON generado por Python
-        async function fetchPrice() {
-            try {
-                // Agregamos un timestamp para evitar el caché del navegador
-                const response = await fetch('data.json?t=' + new Date().getTime());
-                const data = await response.json();
-
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('price-container').style.display = 'block';
-
-                document.getElementById('price').innerText = parseFloat(data.price).toFixed(2);
-                document.getElementById('vendor').innerText = data.vendor;
-                document.getElementById('last-update').innerText = data.datetime;
-            } catch (error) {
-                console.error("Error cargando el precio:", error);
-                document.getElementById('loading').innerHTML = "<span class='text-danger'>Error al cargar datos</span>";
-            }
+<script>
+    async function updateData() {
+        try {
+            // El ?v= evita que el navegador use una versión vieja guardada
+            const resp = await fetch('data.json?v=' + Date.now());
+            if(!resp.ok) throw new Error();
+            const data = await resp.json();
+            
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+            
+            document.getElementById('price').innerText = data.price;
+            document.getElementById('vendor').innerText = data.vendor;
+            document.getElementById('time').innerText = data.datetime;
+        } catch (e) {
+            document.getElementById('loader').innerHTML = 
+                '<span class="text-danger small">Esperando actualización de GitHub...</span>';
         }
-
-        // Ejecutar al cargar la página
-        window.onload = fetchPrice;
-    </script>
+    }
+    updateData();
+</script>
 </body>
 </html>
